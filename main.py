@@ -1,6 +1,16 @@
 from . import *
+import argparse
+
 
 class TextGenerator:
+	def __init__():
+		parser = argparse.ArgumentParser(description='Fit and generate some text.', prog='python main.py')
+		parser.add_argument('length', metavar='L', type=int, required=True, help='Length of text you\'l make.')
+		parser.add_argument
+
+		parser.add_argument('path', metavar='p', type=str, required=False, help='Path to your model.')
+		args = parser.parse_args()
+
 	def fit():
 		# process text
 		pass
