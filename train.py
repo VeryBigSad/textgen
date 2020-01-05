@@ -91,7 +91,7 @@ def get_word_order(sentence_list):
 	# will be able to cut proper nouns. And use commas?
 
 	order = {}
-	counter = 0
+	counter = 0	
 	some_constant_which_we_need_to_have = 3
 	# todo: add that constant properly and etc
 
@@ -111,7 +111,12 @@ def get_word_order(sentence_list):
 			counter_for_capitalize += 1
 			next_word = word_list[counter_for_capitalize]
 			try:
-				word_list[counter_for_capitalize + 1]
+				if word_list[counter_for_capitalize + 1] == word_list[counter_for_capitalize + 1].capitalize():
+					word_list[counter_for_capitalize + 1] = ''
+				if word_list[counter_for_capitalize] == word_list[counter_for_capitalize].capitalize():
+					word_list[counter_for_capitalize] = ''
+
+
 			except IndexError:
 
 				# TODO: remove continue and replace it with something
@@ -146,7 +151,14 @@ def get_word_order(sentence_list):
 	# {'word': {'second_word1': {'times_repeated': 100, 'next_words': {'third_word': 2, 'third_word2': 1}},
 	# 'second_word2': {'times_repeated': 99, 'next_words': {'third_word': 12, 'third_word2': 11}}, ...}
 	for word, word_val in order.items():
-		for nxt_word, nxt_word_val in word_val.items():
+		if word == '' or word == ',':
+			tmporder.pop(word)
+			continue
+		for nxt_word in list(word_val):
+			nxt_word_val = word_val[nxt_word]
+			if nxt_word == '' or nxt_word == ',':
+				tmporder[word].pop(nxt_word)
+				continue
 			for nxt2_word in list(nxt_word_val['next_words']):
 				nxt2_word_val = nxt_word_val['next_words'][nxt2_word]
 				if nxt2_word_val < some_constant_which_we_need_to_have:
