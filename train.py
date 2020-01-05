@@ -1,15 +1,28 @@
 import random	
 import argparse
 import pickle
+import logging
+import time
+
+# TODO: i know it's bad, will have to make this
+# into class and give it self.l variable.
+
+l = logging.getLogger('Training')
+formatter = logging.Formatter('%(name)s - %(asctime)s - %(levelname)s - %(message)s')
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+
+l.addHandler(handler)
+l.setLevel(logging.DEBUG)
 
 
 def get_text(path):
-	text = open(path) # лев толстой, война и мир
-	text = text.read()
-
-	text = text[:9999] # i dont need long process time
-	# TODO: if i finish pickle, remove this cuz it wont take
-	# that much time anymore.
+	l.info('getting text from "' + str(path) + '".')
+	try:
+		text = open(path).read() # лев толстой, война и мир
+	except FileNotFoundError:
+		l.critical('text file not found')
+		exit()
 
 	return text
 
@@ -80,76 +93,91 @@ def get_word_order(sentence_list):
 	order = {}
 	counter = 0
 	some_constant_which_we_need_to_have = 3
-	# todo: add that constant
+	# todo: add that constant properly and etc
 
 	for word_list in sentence_list:
 		counter_for_capitalize = 0
 
-		for word in word_list:
-			if word == word.capitalize() and counter_for_capitalize == 0:
+		for word_id in range(len(word_list)-1):
+			word = word_list[word_id]
+
+			if word == word.capitalize() and counter_for_capitalize != 0 and word != ',':
 				# if this is capitalised and not first word in sentense, then ignore it,
 				# because we don't need proper nouns.
 				continue
+			word = word.lower()
+
 			counter += 1
 			counter_for_capitalize += 1
+			next_word = word_list[counter_for_capitalize]
 			try:
-				next_word = word_list[counter]
-				try:
-					tmp = word_list[counter + 1]
-					# TODO: use it as a variable
-				except IndexError:
-					tmp = 'NONE'
-					# REALLY TODO: DO IT, CONTINUE IS SOOOO BAD
-					continue
+				word_list[counter_for_capitalize + 1]
 			except IndexError:
-				continue
 
+				# TODO: remove continue and replace it with something
+				# else, because this cuts some words.
+				continue
 			try:
 				order[word][next_word]['times_repeated'] += 1
-				order[word][next_word]['next_words'][word_list[counter + 1]] += 1
-			except KeyError:
+				order[word][next_word]['next_words'][word_list[counter_for_capitalize + 1]] += 1
+			except KeyError as e3:
+				# l.debug(str(e3) + ' e3')
 				try:
 					order[word][next_word]['times_repeated'] += 1
-					order[word][next_word]['next_words'].update({word_list[counter + 1]: 1})
-				except KeyError:
+					order[word][next_word]['next_words'].update({word_list[counter_for_capitalize + 1]: 1})
+				except KeyError as e2:
+					# l.debug(str(e2) + ' e2')
 					try:
 						# here and in next "try:" var.update({smthing: {}}) is equal to var[smthing] = {...}
 						order[word].update({next_word: {
-							'times_repeated': 1, 'next_words': {word_list[counter + 1]: 1}}
+							'times_repeated': 1, 'next_words': {word_list[counter_for_capitalize + 1]: 1}}
 							})
-					except KeyError:
+					except KeyError as e:
+						# l.debug(str(e) + ' e')
 						order.update({word: {next_word: {
-							'times_repeated': 1, 'next_words': {word_list[counter + 1]: 1}}
+							'times_repeated': 1, 'next_words': {word_list[counter_for_capitalize + 1]: 1}}
 							}})
-
 
 	# if word has been mentioned very not often after 
 	# some word, we delete it, because maybe it was 1 situation,
 	# not an order we can follow.
-	for key, val in order.items():
-		for key2, val2 in val.items():
-			for key3, vall in val2['next_words'].items():
-				if vall > some_constant_which_we_need_to_have:
-					order[key][key2]['next_words'].pop(keyy)
+	tmporder = order.copy()
+
+	# {'word': {'second_word1': {'times_repeated': 100, 'next_words': {'third_word': 2, 'third_word2': 1}},
+	# 'second_word2': {'times_repeated': 99, 'next_words': {'third_word': 12, 'third_word2': 11}}, ...}
+	for word, word_val in order.items():
+		for nxt_word, nxt_word_val in word_val.items():
+			for nxt2_word in list(nxt_word_val['next_words']):
+				nxt2_word_val = nxt_word_val['next_words'][nxt2_word]
+				if nxt2_word_val < some_constant_which_we_need_to_have:
+					# TODO: add deleting of commas as "first" ("first": {...}) words, not later ones.
+					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
+	order = tmporder.copy()
 
 
 	return order
 
 
 def main():
+	# parsing arguments
 	parser = argparse.ArgumentParser(description='Teach your model.', prog='python train.py')
 	parser.add_argument('input_dir',  help='Path to text file.', type=str)
 	parser.add_argument('model', help='Path to where to save your model.', type=str)
 	args = parser.parse_args()
 
-	# args.path = 'data/text.txt' # temporaly
-
 	text = get_text(args.input_dir)
 	sentense_list = get_sentense_list(text)
 	order = get_word_order(sentense_list)
 
+	l.info('training done')
+
+
 	with open(args.model, 'wb') as f:
 		pickle.dump(order, f)
-
-main()
+	l.info('writing down to "' + str(args.model) + '" done.')
+	# l.debug(str(order)[:999])
+try:
+	main()
+except KeyboardInterrupt:
+	exit('\n\nKeyboard Interrupt')
 
