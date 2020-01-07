@@ -81,6 +81,13 @@ def get_word_list(text):
 	return result
 
 
+def get_regular_case(word):
+
+	# TODO: make it work, otherwise it is kinda useless.
+
+	return word
+
+
 def get_word_order(sentence_list):
 	# returns:
 	#
@@ -96,25 +103,24 @@ def get_word_order(sentence_list):
 	# todo: add that constant properly and etc
 
 	for word_list in sentence_list:
-		counter_for_capitalize = 0
-
 		for word_id in range(len(word_list)-1):
 			word = word_list[word_id]
+			word = get_regular_case(word)
 
-			if word == word.capitalize() and counter_for_capitalize != 0 and word != ',':
+			if word == word.capitalize() and word_id != 0 and word != ',':
 				# if this is capitalised and not first word in sentense, then ignore it,
 				# because we don't need proper nouns.
 				continue
 			word = word.lower()
 
 			counter += 1
-			counter_for_capitalize += 1
-			next_word = word_list[counter_for_capitalize]
 			try:
-				if word_list[counter_for_capitalize + 1] == word_list[counter_for_capitalize + 1].capitalize():
-					word_list[counter_for_capitalize + 1] = ''
-				if word_list[counter_for_capitalize] == word_list[counter_for_capitalize].capitalize():
-					word_list[counter_for_capitalize] = ''
+				next_word = word_list[word_id + 1]
+				next_next_word = word_list[word_id + 2]
+				if word_list[word_id + 2] == word_list[word_id + 2].capitalize():
+					next_next_word = ''
+				if word_list[word_id + 1] == word_list[word_id + 1].capitalize():
+					next_word = ''
 
 
 			except IndexError:
@@ -124,23 +130,23 @@ def get_word_order(sentence_list):
 				continue
 			try:
 				order[word][next_word]['times_repeated'] += 1
-				order[word][next_word]['next_words'][word_list[counter_for_capitalize + 1]] += 1
+				order[word][next_word]['next_words'][next_next_word] += 1
 			except KeyError as e3:
 				# l.debug(str(e3) + ' e3')
 				try:
 					order[word][next_word]['times_repeated'] += 1
-					order[word][next_word]['next_words'].update({word_list[counter_for_capitalize + 1]: 1})
+					order[word][next_word]['next_words'].update({next_next_word: 1})
 				except KeyError as e2:
 					# l.debug(str(e2) + ' e2')
 					try:
 						# here and in next "try:" var.update({smthing: {}}) is equal to var[smthing] = {...}
 						order[word].update({next_word: {
-							'times_repeated': 1, 'next_words': {word_list[counter_for_capitalize + 1]: 1}}
+							'times_repeated': 1, 'next_words': {next_next_word: 1}}
 							})
 					except KeyError as e:
 						# l.debug(str(e) + ' e')
 						order.update({word: {next_word: {
-							'times_repeated': 1, 'next_words': {word_list[counter_for_capitalize + 1]: 1}}
+							'times_repeated': 1, 'next_words': {next_next_word: 1}}
 							}})
 
 	# if word has been mentioned very not often after 
@@ -161,7 +167,9 @@ def get_word_order(sentence_list):
 				continue
 			for nxt2_word in list(nxt_word_val['next_words']):
 				nxt2_word_val = nxt_word_val['next_words'][nxt2_word]
-				if nxt2_word_val < some_constant_which_we_need_to_have:
+				if nxt2_word == '' or nxt2_word == ',':
+					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
+				elif nxt2_word_val < some_constant_which_we_need_to_have:
 					# TODO: add deleting of commas as "first" ("first": {...}) words, not later ones.
 					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
 	order = tmporder.copy()
@@ -180,6 +188,7 @@ def main():
 	text = get_text(args.input_dir)
 	sentense_list = get_sentense_list(text)
 	order = get_word_order(sentense_list)
+	l.debug('order len - ' + str(len(list(order))))
 
 	l.info('training done')
 

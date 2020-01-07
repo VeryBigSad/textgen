@@ -1,6 +1,16 @@
 import random
 import pickle
 import argparse
+import logging
+
+
+l = logging.getLogger('Generating')
+formatter = logging.Formatter('%(name)s - %(asctime)s - %(levelname)s - %(message)s')
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+
+l.addHandler(handler)
+l.setLevel(logging.DEBUG)
 
 def unpack(path):
 	try:
@@ -12,64 +22,63 @@ def unpack(path):
 	return data
 
 
-def generate(word_order, length, seed):
-	# word_order
+def generate(order, length, seed):
+	# order
 	#
 	# {'word': {'second_word1': {'times_repeated': 100, 'next_words': {'third_word': 2, 'third_word2': 1}},
 	# 'second_word2': {'times_repeated': 99, 'next_words': {'third_word': 12, 'third_word2': 11}}, ...}
 
 	if length == None:
-		length = 50
+		length = 10
 	if seed == None:
-		seed = random.randint(0, len(list(word_order))-1)
-	seed = seed % (len(list(word_order)) - 1)
+		random.seed()
+		l.info('Generating with random seed.')
+	else:
+		random.seed(seed)
+		l.info('Generating with seed ' + str(seed))
+	sequence = [random.choice(list(order))]
 
-	word = list(word_order)[seed]
-	sequence = [word]
+	for counter in range(length):
+		last_used = sequence[-1:][0]
+		# l.debug(order[last_used])
+		# l.debug('possible next words: ' + str([order[last_used][next_word]['next_words'] for next_word in order[last_used]]))
 
-	# right now it works like this: raffle. more times you are beeing met after some word,
-	# more chances for you to be after this word here.
-	for i in range(length):
-		word = word.lower()
-		summ = 0
+		tmp_sum = [order[last_used][next_word]['times_repeated'] for next_word in list(order[last_used])]
+		tmp_sum = sum(tmp_sum)
+		# tmp_sum - how many times word had been used.
 
-		# all uses of words summary
-		for tmp, val in word_order[word].items():
-			summ += val['times_repeated']
+		item = random.randint(0, tmp_sum)
+		item_copy = int(item)
+		for next_word in [random.choice(list(order[last_used])) for i in range(len(list(order[last_used])))]:
+			item -= order[last_used][next_word]['times_repeated']
+			if item <= 0:
+				key = next_word
+				sequence.append(next_word)
+				l.debug('We added a word ' + next_word + ', because it had chance ' + 
+					str(order[last_used][next_word]['times_repeated'] / tmp_sum))
+				if True:
+					# TODO: add if; if we need to use next_word2, use it,
+					# otherwise - just pick another rando word.
+					break
+					# for next_word2 in order[last_used][next_word]['next_words']:
+					# 	pass
 
-		# picking random item and choosing the winner
-
-		# TODO: maybe replace this inefficient for() with
-		# something in 1st cycle. like, list of flags? idk, think about it
-		item = random.randint(0, summ)
-		for key in list(word_order[word]):
-
-			val = word_order[word][key]
-			item -= val['times_repeated']
-
-			if item <= 0 and key != ',':
-				word = key
-				sequence.append(key)
-				summ2 = 0
-
-				for key2 in list(word_order[word][key]):
-					for tmp, val in word_order[word].items():
-						summ += val['times_repeated']					
+				else:
+					break
 
 
-		word = word
 
 	# adding big-letter to first word and "." to end.
-	str = ''
+	string = ''
 	for i in sequence:
-		str += i + ' '
-	str = str[0].upper() + str[1:]
-	str = str[:-1] + '.'
-	return str
+		string += i + ' '
+	string = string[0].upper() + string[1:]
+	string = string[:-1] + '.'
+	return string
 
 
 def main():
-	# parsing arguments form console
+	# parsing arguments from console
 	parser = argparse.ArgumentParser(description='Generate text using created model.')
 	parser.add_argument('model', help='Path where to get your model.', type=str)
 	parser.add_argument('--length', help='Length of your text in words.', required=False, type=int)
@@ -79,7 +88,7 @@ def main():
 	order = unpack(args.model)
 	result = generate(order, length=args.length, seed=args.seed)
 
-	print(result)
+	print('\n\n\n\n\n\n', result)
 
 main()
 
