@@ -2,7 +2,7 @@ import random
 import argparse
 import pickle
 import logging
-import time
+import sys
 
 # TODO: i know it's bad, will have to make this
 # into class and give it self.l variable.
@@ -79,6 +79,12 @@ def get_word_list(text):
 
 	result = [i for i in result if i != '']
 	return result
+
+
+def dump(model_path, order):
+	with open(model_path, 'wb') as f:
+		pickle.dump(order, f)
+	l.info('writing down to "' + str(model_path) + '" done.')
 
 
 def get_regular_case(word):
@@ -191,14 +197,10 @@ def main():
 	l.debug('order len - ' + str(len(list(order))))
 
 	l.info('training done')
+	dump(args.model, order)
 
-
-	with open(args.model, 'wb') as f:
-		pickle.dump(order, f)
-	l.info('writing down to "' + str(args.model) + '" done.')
-	# l.debug(str(order)[:999])
-try:
-	main()
-except KeyboardInterrupt:
-	exit('\n\nKeyboard Interrupt')
-
+if sys.argv[0] == 'train.py':
+	try:
+		main()
+	except KeyboardInterrupt:
+		exit('\n\nKeyboard Interrupt')

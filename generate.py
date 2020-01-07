@@ -2,7 +2,7 @@ import random
 import pickle
 import argparse
 import logging
-
+import sys
 
 l = logging.getLogger('Generating')
 formatter = logging.Formatter('%(name)s - %(asctime)s - %(levelname)s - %(message)s')
@@ -89,6 +89,9 @@ def main():
 	result = generate(order, length=args.length, seed=args.seed)
 
 	print('\n\n\n\n\n\n', result)
-
-main()
+if sys.argv[0] == 'generate.py':
+	try:
+		main()
+	except KeyboardInterrupt:
+		exit('\n\nKeyboard Interrupt')
 
