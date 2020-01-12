@@ -10,19 +10,19 @@ class TextGenerator:
 		self.length = length
 		self.order = None
 
-	def set_store_path(store_path):
+	def set_store_path(self, store_path):
 		self.store_path = store_path
 
-	def set_text_path(text_path):
+	def set_text_path(self, text_path):
 		self.text_path = text_path
 
-	def set_seed(seed):
+	def set_seed(self, seed):
 		self.seed = seed
 
-	def set_length(length):
+	def set_length(self, length):
 		self.length = length
 
-	def fit(self):
+	def fit(self, text_path):
 		self.order = get_word_order(get_sentense_list(get_text(text_path)))
 		return self.order
 
