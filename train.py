@@ -19,7 +19,7 @@ l.setLevel(logging.DEBUG)
 def get_text(path):
 	l.info('getting text from "' + str(path) + '".')
 	try:
-		text = open(path).read() # лев толстой, война и мир
+		text = open(path, encoding='utf8').read() # лев толстой, война и мир
 	except FileNotFoundError:
 		l.critical('text file not found')
 		exit()
@@ -163,20 +163,51 @@ def get_word_order(sentence_list):
 	# {'word': {'second_word1': {'times_repeated': 100, 'next_words': {'third_word': 2, 'third_word2': 1}},
 	# 'second_word2': {'times_repeated': 99, 'next_words': {'third_word': 12, 'third_word2': 11}}, ...}
 	for word, word_val in order.items():
+		if word_val == {}:
+			tmporder.pop(word)
+			continue
 		if word == '' or word == ',':
 			tmporder.pop(word)
 			continue
 		for nxt_word in list(word_val):
 			nxt_word_val = word_val[nxt_word]
+			if nxt_word_val == {}:
+				tmporder[word].pop(nxt_word)
+				continue
 			if nxt_word == '' or nxt_word == ',':
 				tmporder[word].pop(nxt_word)
 				continue
 			for nxt2_word in list(nxt_word_val['next_words']):
 				nxt2_word_val = nxt_word_val['next_words'][nxt2_word]
+				if nxt2_word_val == {}:
+					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
 				if nxt2_word == '' or nxt2_word == ',':
 					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
 				elif nxt2_word_val < some_constant_which_we_need_to_have:
-					# TODO: add deleting of commas as "first" ("first": {...}) words, not later ones.
+					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
+	order = tmporder.copy()
+	for word, word_val in order.items():
+		if word_val == {}:
+			tmporder.pop(word)
+			continue
+		if word == '' or word == ',':
+			tmporder.pop(word)
+			continue
+		for nxt_word in list(word_val):
+			nxt_word_val = word_val[nxt_word]
+			if nxt_word_val == {}:
+				tmporder[word].pop(nxt_word)
+				continue
+			if nxt_word == '' or nxt_word == ',':
+				tmporder[word].pop(nxt_word)
+				continue
+			for nxt2_word in list(nxt_word_val['next_words']):
+				nxt2_word_val = nxt_word_val['next_words'][nxt2_word]
+				if nxt2_word_val == {}:
+					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
+				if nxt2_word == '' or nxt2_word == ',':
+					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
+				elif nxt2_word_val < some_constant_which_we_need_to_have:
 					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
 	order = tmporder.copy()
 
@@ -199,8 +230,10 @@ def main():
 	l.info('training done')
 	dump(args.model, order)
 
-if sys.argv[0] == 'train.py':
+
+if sys.argv[0] == 'train.py' or sys.argv[0] == 'D:/Programming/textgen/train.py':
 	try:
 		main()
 	except KeyboardInterrupt:
 		exit('\n\nKeyboard Interrupt')
+
