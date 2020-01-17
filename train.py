@@ -34,7 +34,7 @@ def get_sentense_list(text):
 	tmp = ''
 
 	for i in text:
-		if i == '.' or i == '?' or i == '!':
+		if i == '.' or i == '?' or i == '!' or i == '\n':
 			sentences.append(tmp)
 			tmp = ''
 		else:
@@ -104,7 +104,7 @@ def get_word_order(sentence_list):
 	# will be able to cut proper nouns. And use commas?
 
 	order = {}
-	counter = 0	
+	counter = 0
 	some_constant_which_we_need_to_have = 3
 	# todo: add that constant properly and etc
 
@@ -112,14 +112,16 @@ def get_word_order(sentence_list):
 		for word_id in range(len(word_list)-1):
 			word = word_list[word_id]
 			word = get_regular_case(word)
+			word_pos = (word_id + 1) / len(word_list) # normalized position in sentence
+
 
 			if word == word.capitalize() and word_id != 0 and word != ',':
 				# if this is capitalised and not first word in sentense, then ignore it,
 				# because we don't need proper nouns.
 				continue
 			word = word.lower()
-
 			counter += 1
+
 			try:
 				next_word = word_list[word_id + 1]
 				next_next_word = word_list[word_id + 2]
@@ -128,34 +130,37 @@ def get_word_order(sentence_list):
 				if word_list[word_id + 1] == word_list[word_id + 1].capitalize():
 					next_word = ''
 
-
 			except IndexError:
 
 				# TODO: remove continue and replace it with something
 				# else, because this cuts some words.
 				continue
 			try:
+				order[word]['_position'] = (order[word]['position'] + word_pos) / 2
 				order[word][next_word]['times_repeated'] += 1
 				order[word][next_word]['next_words'][next_next_word] += 1
 			except KeyError as e3:
 				# l.debug(str(e3) + ' e3')
 				try:
+					order[word]['_position'] = (order[word]['position'] + word_pos) / 2
 					order[word][next_word]['times_repeated'] += 1
 					order[word][next_word]['next_words'].update({next_next_word: 1})
 				except KeyError as e2:
 					# l.debug(str(e2) + ' e2')
 					try:
 						# here and in next "try:" var.update({smthing: {}}) is equal to var[smthing] = {...}
+						order[word]['_position'] = (order[word]['position'] + word_pos) / 2
 						order[word].update({next_word: {
 							'times_repeated': 1, 'next_words': {next_next_word: 1}}
-							})
+						})
 					except KeyError as e:
 						# l.debug(str(e) + ' e')
 						order.update({word: {next_word: {
 							'times_repeated': 1, 'next_words': {next_next_word: 1}}
-							}})
+						}})
+						order[word]['_position'] = word_pos
 
-	# if word has been mentioned very not often after 
+	# if word has been mentioned very not often after
 	# some word, we delete it, because maybe it was 1 situation,
 	# not an order we can follow.
 	tmporder = order.copy()
@@ -171,6 +176,9 @@ def get_word_order(sentence_list):
 			continue
 		for nxt_word in list(word_val):
 			nxt_word_val = word_val[nxt_word]
+			if type(nxt_word_val) == float:
+				# reserved thing, for key '_position'
+				continue
 			if nxt_word_val == {}:
 				tmporder[word].pop(nxt_word)
 				continue
@@ -185,6 +193,7 @@ def get_word_order(sentence_list):
 					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
 				elif nxt2_word_val < some_constant_which_we_need_to_have:
 					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
+
 	order = tmporder.copy()
 	for word, word_val in order.items():
 		if word_val == {}:
@@ -195,6 +204,9 @@ def get_word_order(sentence_list):
 			continue
 		for nxt_word in list(word_val):
 			nxt_word_val = word_val[nxt_word]
+			if type(nxt_word_val) == float:
+				# reserved thing, for key '_position'
+				continue
 			if nxt_word_val == {}:
 				tmporder[word].pop(nxt_word)
 				continue
@@ -210,7 +222,6 @@ def get_word_order(sentence_list):
 				elif nxt2_word_val < some_constant_which_we_need_to_have:
 					tmporder[word][nxt_word]['next_words'].pop(nxt2_word)
 	order = tmporder.copy()
-
 
 	return order
 
